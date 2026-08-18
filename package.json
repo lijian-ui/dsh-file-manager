@@ -74,7 +74,8 @@
     "lib",
     "src",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "README.zh.md"
   ],
   "license": "Apache-2.0",
   "repository": {
