@@ -1,0 +1,38 @@
+/**
+ * Global restyle of the shell's reference chips to the file-reference look
+ * (the user's screenshot): a muted rounded pill with a green `</>` code
+ * glyph. The shell renders every U+FFFC chip with `data-decoration="chip"`
+ * (InputBar), so this file overrides its default blue tint through that
+ * attribute — the hash-scoped `.chip` class stays untouched and alignment
+ * (the U+FFFC advance cell) is preserved because the glyph comes from the
+ * label cell's ::before, not the placeholder cell's.
+ *
+ * Side effect: chips of other sources (skills, subagents) pick up the same
+ * pill look — a uniform, muted family, which the shell's default blue
+ * already intended.
+ * @module dsh-filemgr/client/styles/chip
+ */
+
+:global([data-decoration="chip"]) {
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 6px;
+}
+
+:global(body[data-ds-dark-theme] [data-decoration="chip"]) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* The label cell keeps the shell's default 0.72 compensated scale (no
+   override here) — the pill text renders at the composer's native size. */
+
+/* The green `</>` glyph, drawn inside the label cell (absolute-positioned by
+   the shell, so this never shifts the placeholder advance). */
+:global([data-decoration="chip"] > span::before) {
+  content: "</>";
+  color: var(--aion-success, #16a34a);
+  font-family: var(--aion-font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 0.85em;
+  font-weight: 700;
+  margin-right: 4px;
+  letter-spacing: -0.5px;
+}

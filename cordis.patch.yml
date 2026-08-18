@@ -1,0 +1,13 @@
+# dsh-filemgr bundle patch: inserts the dual-face plugin row into the web
+# profile roster. Applied as a profile bundle layer (the `dsh.bundle.patch`
+# manifest field); install with
+# `dsh plugin --profile web add link:<repo>/packages/dsh-filemgr`.
+#
+# The row is a bare plugin by package name: the node half (exports ".") runs
+# in the host process (workspace-gated fs/git services + /filemgr routes),
+# and the `dsh.client` declaration in package.json makes the browser half
+# (exports "./client", served at /plugins/ui-dsh-filemgr/client.js) load
+# in the web GUI.
+- insert:
+    - id: ui-dsh-filemgr
+      name: '@lijian-ui/dsh-file-manager'
