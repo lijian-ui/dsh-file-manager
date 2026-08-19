@@ -188,85 +188,13 @@
   }
 }
 
-/* Drag handles: 2px visual line, 6px + brand on hover/active. */
+/* Drag handles: invisible, col-resize cursor only (like DSH native sidebar). */
 :global(.filemgr-explorer-handle),
 :global(.filemgr-preview-handle) {
   touch-action: none;
-}
-:global(.filemgr-explorer-handle::after),
-:global(.filemgr-preview-handle::after) {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 2px;
-  border-radius: 9999px;
-  background-color: var(--aion-bg-3);
-  opacity: 0.9;
-  transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-    background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-}
-:global(.filemgr-explorer-handle:hover::after),
-:global(.filemgr-explorer-handle:active::after),
-:global(.filemgr-preview-handle:hover::after),
-:global(.filemgr-preview-handle:active::after) {
-  width: 6px;
-  background-color: var(--aion-brand);
-}
-/* The preview handle's line sits at its right edge (its hit zone extends
-   left); the explorer's at its left edge. */
-:global(.filemgr-preview-handle::after) {
-  left: auto;
-  right: 0;
-  opacity: 0.3;
-}
-:global(.filemgr-preview-handle:hover::after),
-:global(.filemgr-preview-handle:active::after) {
-  opacity: 1;
+  cursor: col-resize;
 }
 
-/* Floating expand button (explorer collapsed). Docked at the viewport's
-   top-right corner, just below the shell header's bottom divider (the
-   horizontal line under the "Session log" row) — the layout controller
-   sets an inline top for that, so the button never overlaps the header
-   chrome (issues #374 / #292). Above the columns (z 30): when the preview
-   region is open it overlaps the rightmost column track, so anything
-   lower would be painted under the opaque column and stop receiving
-   clicks (issue #234 follow-up). Full-screen overlay drawers must render
-   at the ROOT stacking context (z 100~1000) to cover it.
-   The top below is only the pre-JS fallback (the chevron row); the
-   controller overwrites it inline. */
-:global(.filemgr-floating-expand) {
-  position: fixed;
-  top: calc(6px + env(titlebar-area-height, 0px));
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 4px;
-  background-color: var(--aion-bg-2);
-  color: var(--aion-text-secondary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-  z-index: 100;
-  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-}
-:global(.filemgr-floating-expand:hover) {
-  background-color: var(--aion-bg-3);
-  color: var(--aion-text-primary);
-}
-:global(.filemgr-floating-expand:active) {
-  background-color: var(--aion-bg-active);
-}
-:global(.filemgr-floating-expand:focus-visible) {
-  outline: 2px solid var(--aion-primary);
-  outline-offset: 2px;
-}
 
 /* The collapse chevron inside the explorer tab bar (top-right). It rides
    the explorer column's stacking context (the column stacks at z 30), so

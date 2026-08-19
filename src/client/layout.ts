@@ -34,10 +34,7 @@ import {
 } from './store.ts'
 import { writeStoredNumber } from './persist.ts'
 import { maximizedGridTracks, maximizedOverlay } from './maximize.ts'
-import {
-  FLOATING_BUTTON_HEIGHT_PX, FLOATING_HEADER_GAP_PX,
-  clampFloatingTop, titlebarAreaHeight, topAlignedFloatingTop,
-} from './floating.ts'
+
 import type { LayoutStore } from './store.ts'
 
 /** The frame grid element (portals target it). */
@@ -123,7 +120,7 @@ export class PanelLayoutController {
   private explorerCol: HTMLDivElement | null = null
   private explorerHandle: HTMLDivElement | null = null
   private previewHandle: HTMLDivElement | null = null
-  private floatingButton: HTMLButtonElement | null = null
+
   private styleObserver: MutationObserver | null = null
   private sizeObserver: ResizeObserver | null = null
   private waitObserver: MutationObserver | null = null
@@ -191,26 +188,6 @@ export class PanelLayoutController {
     frame.appendChild(this.explorerHandle)
     frame.appendChild(this.previewHandle)
 
-    // The floating expand button (fixed, top-right corner) — DOM-level,
-    // no React. Docked exactly where the explorer's collapse chevron sits,
-    // so collapsing and re-expanding toggle in place (issue #374 follow-up);
-    // a click toggles the explorer.
-    this.floatingButton = document.createElement('button')
-    this.floatingButton.type = 'button'
-    this.floatingButton.className = 'filemgr-floating-expand'
-    this.floatingButton.setAttribute('aria-label', 'Expand explorer')
-    this.floatingButton.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>'
-    this.floatingButton.addEventListener('click', () => { this.toggleExplorer() })
-    document.body.appendChild(this.floatingButton)
-
-    // Window Controls Overlay (dsh-desktop, issue #292): re-position when
-    // the titlebar area changes (button must stay below the window buttons).
-    const overlay = (navigator as Navigator & { windowControlsOverlay?: EventTarget }).windowControlsOverlay
-    if (overlay !== undefined) {
-      const onGeometryChange = (): void => { this.positionFloatingButton() }
-      overlay.addEventListener('geometrychange', onGeometryChange)
-      this.disposers.push(() => overlay.removeEventListener('geometrychange', onGeometryChange))
-    }
 
     // Esc restores a maximized panel (issue #315). Editing surfaces own Esc:
     // while an input/textarea/contenteditable is focused, leave it alone.
@@ -238,6 +215,12 @@ export class PanelLayoutController {
       }
       if (tracks.length === 5 && this.shellTracks.length === 3) {
         // Our own write — keep it (the shell tracks are already mirrored).
+        return
+      }
+      // 6 tracks: dsh-term appended its track after our 5 — re-apply to
+      // update handle positions (they must offset left by dsh-term's width).
+      if (tracks.length === 6 && tracks.includes('[dsh-term]') && this.shellTracks.length === 3) {
+        this.applyGrid()
         return
       }
     }
@@ -393,20 +376,6 @@ export class PanelLayoutController {
     return Number.isFinite(bottom) ? bottom : null
   }
 
-  /** Position the floating button: docked at the top-right corner, just
-   * below the shell header's bottom divider (fallback: the chevron row). */
-  private positionFloatingButton(): void {
-    const el = this.floatingButton
-    if (el === null) return
-    const height = window.innerHeight
-    const titlebar = titlebarAreaHeight()
-    const headerBottom = this.findHeaderBottom()
-    const top = headerBottom !== null
-      ? clampFloatingTop(headerBottom + FLOATING_HEADER_GAP_PX, height, FLOATING_BUTTON_HEIGHT_PX, titlebar)
-      : topAlignedFloatingTop(height, FLOATING_BUTTON_HEIGHT_PX, titlebar)
-    el.style.top = `${Math.round(top)}px`
-    el.style.transform = 'none'
-  }
 
   /** Apply one store update with transitions disabled for exactly one frame. */
   private instant(fn: () => void): void {
@@ -445,9 +414,25 @@ export class PanelLayoutController {
     const explorer = this.layout.explorerWidthPx(state)
     const preview = this.layout.previewWidthPx(state)
 
+    // Detect dsh-term column (appended by the dsh-term plugin after our tracks).
+    // When present, preserve its track and offset handles left by its width.
+    // Check the grid tokens for [dsh-term] — the col element may exist but not
+    // have a track yet (initial mount), so display/width alone are unreliable.
+    const gridTokens = parseGridTracks(frame.style.gridTemplateColumns)
+    const hasDshTermTrack = gridTokens.includes('[dsh-term]')
+    const dshTermCol = hasDshTermTrack ? frame.querySelector<HTMLElement>('[data-dsh-term-col]') : null
+    const dshTermOpen = dshTermCol !== null
+      && dshTermCol.style.display !== 'none'
+      && dshTermCol.getBoundingClientRect().width > 0
+    const dshTermWidth = dshTermOpen ? Math.round(dshTermCol!.getBoundingClientRect().width) : 0
+
     // Five tracks: shell sidebar, center, shell details, preview, explorer.
-    frame.style.gridTemplateColumns =
+    // (Six when dsh-term is open — preserve its track so we don't clobber it.)
+    const baseGrid =
       `${this.shellTracks[0]} minmax(0, 1fr) ${this.shellTracks[2]} ${Math.round(preview)}px ${Math.round(explorer)}px`
+    frame.style.gridTemplateColumns = dshTermOpen
+      ? `${baseGrid} [dsh-term] ${dshTermWidth}px`
+      : baseGrid
 
     // Column contents follow the tracks (both columns always mounted).
     if (this.explorerCol !== null) {
@@ -457,15 +442,15 @@ export class PanelLayoutController {
       this.previewCol.style.visibility = preview > 0 ? 'visible' : 'hidden'
     }
 
-    // Handles: at the left edge of each panel.
+    // Handles: at the left edge of each panel (offset left by dsh-term if open).
     if (this.explorerHandle !== null) {
-      const left = Math.round(width - explorer)
+      const left = Math.round(width - explorer - dshTermWidth)
       this.explorerHandle.style.left = `${left}px`
       this.explorerHandle.style.marginLeft = `${-EXPLORER_HANDLE_WIDTH / 2}px`
       this.explorerHandle.style.display = explorer > 0 && state.root !== '' ? 'block' : 'none'
     }
     if (this.previewHandle !== null) {
-      const left = Math.round(width - explorer - preview)
+      const left = Math.round(width - explorer - preview - dshTermWidth)
       this.previewHandle.style.left = `${left}px`
       this.previewHandle.style.display = preview > 0 && state.root !== '' ? 'block' : 'none'
     }
@@ -485,15 +470,9 @@ export class PanelLayoutController {
       this.detailsHandle = frame.querySelector<HTMLElement>('[data-side="details"]')
     }
     if (this.detailsHandle !== null) {
-      this.detailsHandle.style.left = `${Math.round(width - detailsTrack - preview - explorer)}px`
+      this.detailsHandle.style.left = `${Math.round(width - detailsTrack - preview - explorer - dshTermWidth)}px`
     }
 
-    // Floating expand button: visible only when the explorer is collapsed.
-    if (this.floatingButton !== null) {
-      const show = state.root !== '' && state.explorerCollapsed
-      this.floatingButton.style.display = show ? 'flex' : 'none'
-      this.positionFloatingButton()
-    }
   }
 
   /**
@@ -515,11 +494,9 @@ export class PanelLayoutController {
       this.previewCol.style.visibility = target === 'preview' ? 'visible' : 'hidden'
       this.previewCol.classList.toggle('filemgr-maximized', target === 'preview' && overlay)
     }
-    // No drag chrome while maximized: nothing to resize, and the floating
-    // button only makes sense for the collapsed explorer.
+    // No drag chrome while maximized: nothing to resize.
     if (this.explorerHandle !== null) this.explorerHandle.style.display = 'none'
     if (this.previewHandle !== null) this.previewHandle.style.display = 'none'
-    if (this.floatingButton !== null) this.floatingButton.style.display = 'none'
   }
 
   /** Remove the narrow-screen overlay class from both columns. */
@@ -538,7 +515,7 @@ export class PanelLayoutController {
     this.explorerCol?.remove()
     this.explorerHandle?.remove()
     this.previewHandle?.remove()
-    this.floatingButton?.remove()
+
     if (this.instantTimer !== undefined) clearTimeout(this.instantTimer)
     if (frameElement === this.frame) frameElement = null
     this.frame = null

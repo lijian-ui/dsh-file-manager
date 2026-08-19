@@ -38,6 +38,7 @@ import { appendToDraft, appendFileReferenceChip } from './reference.ts'
 import { registerFileReferenceSource } from './file-source.ts'
 import type { FileReferenceSelection } from './preview/selection.ts'
 import './styles/chip.module.css'
+import { FilePanelDockItem } from './FilePanelDockItem.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -80,6 +81,20 @@ const panelApi = new PanelApi()
 
 /** Apply the browser half. */
 export function apply(ctx: ClientContext): void {
+  // Session header dock button (file-panel): each plugin owns its own button
+  // in conversation.session.header.utilities, so file-manager works standalone
+  // without dsh-term. Cross-button magnification is coordinated via window
+  // events (see DockItem.tsx).
+  ctx.inject(['slots'], (scope: ClientContext) => {
+    scope.slots.inject('conversation.session.header.utilities', () =>
+      scope.slots.register({
+        name: 'conversation.session.header.utilities',
+        id: 'filemgr-dock-item',
+        order: -2,
+        inject: () => ({}),
+      }, FilePanelDockItem))
+  })
+
   ctx.effect(() => ctx.locale.register(NS, dictionaries), 'dsh-filemgr: dictionaries')
 
   // The `file` reference source: registers the codec that serializes file

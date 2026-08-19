@@ -53,7 +53,6 @@ export declare class PanelLayoutController {
     private explorerCol;
     private explorerHandle;
     private previewHandle;
-    private floatingButton;
     private styleObserver;
     private sizeObserver;
     private waitObserver;
@@ -82,9 +81,6 @@ export declare class PanelLayoutController {
      * the shell has no header (standalone installs, desktop variants).
      */
     private findHeaderBottom;
-    /** Position the floating button: docked at the top-right corner, just
-     * below the shell header's bottom divider (fallback: the chevron row). */
-    private positionFloatingButton;
     /** Apply one store update with transitions disabled for exactly one frame. */
     private instant;
     /** Re-write the frame grid and reposition handles + floating button. */

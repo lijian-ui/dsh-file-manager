@@ -1,0 +1,1 @@
+{"version":3,"file":"DockItem.d.ts","sourceRoot":"","sources":["../../../src/client/DockItem.tsx"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,EAAE,KAAK,YAAY,EAAE,KAAK,SAAS,EAAE,MAAM,OAAO,CAAA;AAezD,wBAAgB,QAAQ,CAAC,KAAK,EAAE;IAC9B,MAAM,EAAE,OAAO,CAAA;IACf,KAAK,EAAE,MAAM,CAAA;IACb,OAAO,EAAE,MAAM,IAAI,CAAA;IACnB,QAAQ,EAAE,SAAS,CAAA;CACpB,GAAG,YAAY,CAcf"}

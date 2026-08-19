@@ -111,7 +111,7 @@ const hostConfig = {
  */
 const clientConfig = {
   name: `${PLUGIN_ID}/client`,
-  entry: { client: 'src/client/index.ts' },
+  entry: ['src/client/index.ts'],
   outDir: 'lib',
   format: 'cjs',
   platform: 'browser',
