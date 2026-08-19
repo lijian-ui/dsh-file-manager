@@ -295,6 +295,21 @@ export function apply(ctx: ClientContext): void {
       disposers.push(stores.explorer.subscribe(syncGitSubscription))
       bindRoot()
 
+      // Header tool-dock bridge (dsh-term's AnimatedDock): the "file panel"
+      // icon toggles this plugin's explorer through a window event, so the two
+      // bundles stay decoupled. We also mirror explorerCollapsed back so the
+      // dock icon highlights in lockstep.
+      const onToggleFile = (): void => layout.toggleExplorer()
+      window.addEventListener('dsh-dock:toggle-filepanel', onToggleFile)
+      const unsubFileState = stores.layout.subscribe(() => {
+        window.dispatchEvent(new CustomEvent('dsh-dock:filepanel-state', {
+          detail: !stores.layout.getSnapshot().explorerCollapsed,
+        }))
+      })
+      window.dispatchEvent(new CustomEvent('dsh-dock:filepanel-state', {
+        detail: !stores.layout.getSnapshot().explorerCollapsed,
+      }))
+
       // Mirror the preview open state into the layout store (single source: the
       // preview store), and play the enter animation when the region opens.
       const mirrorPreviewOpen = (): void => {
@@ -358,6 +373,8 @@ export function apply(ctx: ClientContext): void {
       return () => {
         flushOnHide()
         window.removeEventListener('pagehide', flushOnHide)
+        window.removeEventListener('dsh-dock:toggle-filepanel', onToggleFile)
+        unsubFileState()
         document.removeEventListener('visibilitychange', onVisibilityChange)
         document.removeEventListener('click', onFileRefClick)
         disposeGitEvents?.()

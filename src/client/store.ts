@@ -145,7 +145,7 @@ export function createLayoutStore(): LayoutStore {
     root: '',
     explorerWidth: readStoredNumber(KEY_EXPLORER_WIDTH, MIN_WORKSPACE_PANEL_PX, MAX_WORKSPACE_PANEL_PX, DEFAULT_WORKSPACE_PANEL_PX),
     previewWidth: readStoredNumber(KEY_PREVIEW_WIDTH, MIN_PREVIEW_PANEL_PX, MAX_PREVIEW_REGION_PX, DEFAULT_PREVIEW_REGION_PX),
-    explorerCollapsed: false,
+    explorerCollapsed: true,
     previewOpen: false,
     availableWidth: 0,
     dragging: false,
